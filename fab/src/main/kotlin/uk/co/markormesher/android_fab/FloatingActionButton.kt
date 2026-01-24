@@ -525,7 +525,7 @@ class FloatingActionButton: RelativeLayout {
 				.rotation(if (isSpeedDialMenuOpen) speedDialMenuAdapter?.fabRotationDegrees() ?: 0F else 0F)
 				.setDuration(SPEED_DIAL_ANIMATION_DURATION)
 				.setListener(object: AnimatorListenerAdapter() {
-					override fun onAnimationEnd(animation: Animator?) {
+					override fun onAnimationEnd(animation: Animator) {
 						busyAnimatingFabIconRotation = false
 					}
 				})

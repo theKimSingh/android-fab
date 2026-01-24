@@ -178,8 +178,8 @@ class DemoActivity: AppCompatActivity() {
 		return true
 	}
 
-	override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-		if (item?.itemId == R.id.stress_test) {
+	override fun onOptionsItemSelected(item: MenuItem): Boolean {
+		if (item.itemId == R.id.stress_test) {
 			startStressTest()
 			return true
 		}
