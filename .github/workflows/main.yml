@@ -58,16 +58,30 @@ jobs:
         # Now running with the newly incremented version in build.gradle
         run: ./gradlew generateRelease
 
-      - name: Commit Changes and Tag
+      - name: Verify Zip Exists
+        run: |
+          if [ ! -f "fab/build/release-${{ env.VERSION }}.zip" ]; then
+            echo "Error: Zip file not found at fab/build/release-${{ env.VERSION }}.zip"
+            exit 1
+          fi
+
+      - name: Commit Version Bump
+        if: github.event_name != 'pull_request'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Stage the modified build.gradle and the generated zip
           git add build.gradle
-          git add fab/build/release-${{ env.VERSION }}.zip
-          
           git commit -m "chore: bump version to ${{ env.VERSION }} [skip ci]"
-          git tag -a "v${{ env.VERSION }}" -m "Release version ${{ env.VERSION }}"
-          
-          git push origin HEAD --follow-tags
+          git push
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.event_name != 'pull_request'
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: Release v${{ env.VERSION }}
+          files: fab/build/release-${{ env.VERSION }}.zip
+          body: |
+            Automated Release for version ${{ env.VERSION }}.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
