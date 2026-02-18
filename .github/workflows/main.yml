@@ -65,7 +65,7 @@ jobs:
           
           # Stage the modified build.gradle and the generated zip
           git add build.gradle
-          git add build/release-${{ env.VERSION }}.zip
+          git add fab/build/release-${{ env.VERSION }}.zip
           
           git commit -m "chore: bump version to ${{ env.VERSION }} [skip ci]"
           git tag -a "v${{ env.VERSION }}" -m "Release version ${{ env.VERSION }}"
