@@ -1,51 +1,73 @@
-name: Generate and Tag Release
+name: Increment, Build, and Tag
 
 on:
-  push:
+  pull_request:
     branches:
-      - release  # or your preferred release branch
+      - main
+  workflow_dispatch: # Manual
+    inputs:
+      reason:
+        description: 'Reason for manual release'
+        required: false
+        default: 'Manual trigger'
 
 jobs:
-  build-and-release:
+  release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Necessary to push commits and tags
+      contents: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetches all history for tagging
+          fetch-depth: 0
 
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '11' # Adjust based on your project needs
+          java-version: '17'
           distribution: 'temurin'
+
+      - name: Increment Version in build.gradle
+        id: bump_version
+        run: |
+          # 1. Extract the current version string from the getProps() block
+          OLD_VERSION=$(sed -n "s/.*'version_name'] = '\([^']*\)'.*/\1/p" build.gradle)
+          echo "Old Version: $OLD_VERSION"
+
+          # 2. Split version (e.g., 2.5.0) into parts and increment the last digit
+          # This handles Semantic Versioning (Major.Minor.Patch)
+          BASE_VERSION=$(echo $OLD_VERSION | cut -d. -f1-2)
+          PATCH=$(echo $OLD_VERSION | cut -d. -f3)
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$BASE_VERSION.$NEW_PATCH"
+          
+          echo "New Version: $NEW_VERSION"
+
+          # 3. Use sed to overwrite the version_name line in build.gradle
+          sed -i "s/properties\['version_name'\] = '$OLD_VERSION'/properties['version_name'] = '$NEW_VERSION'/" build.gradle
+          
+          # 4. Save to environment for later steps
+          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Run generateRelease task
-        run: ./gradlew :fab:generateRelease
+        # Now running with the newly incremented version in build.gradle
+        run: ./gradlew generateRelease
 
-      - name: Extract Version Name
-        id: get_version
-        run: |
-          # Pulls the version_name from gradle.properties or command line
-          VERSION=$(./gradlew -q :fab:properties | grep "version_name:" | awk '{print $2}')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "VERSION is $VERSION"
-
-      - name: Commit Zip and Tag
+      - name: Commit Changes and Tag
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Add the zip file (adjust path if your buildDir differs)
-          git add fab/build/release-${{ env.VERSION }}.zip
+          # Stage the modified build.gradle and the generated zip
+          git add build.gradle
+          git add build/release-${{ env.VERSION }}.zip
           
-          git commit -m "chore: release ${{ env.VERSION }} artifacts"
+          git commit -m "chore: bump version to ${{ env.VERSION }} [skip ci]"
           git tag -a "v${{ env.VERSION }}" -m "Release version ${{ env.VERSION }}"
           
           git push origin HEAD --follow-tags
