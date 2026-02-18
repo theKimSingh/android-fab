@@ -57,7 +57,13 @@ jobs:
       - name: Run generateRelease task
         # Now running with the newly incremented version in build.gradle
         run: ./gradlew generateRelease
-
+        
+      - name: Debug Path and Files
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Full Workspace: $GITHUB_WORKSPACE"
+          ls -R
+          
       - name: Verify Zip Exists
         run: |
           if [ ! -f "fab/build/release-${{ env.VERSION }}.zip" ]; then
