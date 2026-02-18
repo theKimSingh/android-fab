@@ -20,7 +20,7 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17' # Adjust based on your project needs
+          java-version: '11' # Adjust based on your project needs
           distribution: 'temurin'
 
       - name: Grant execute permission for gradlew
