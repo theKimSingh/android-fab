@@ -1,0 +1,51 @@
+name: Generate and Tag Release
+
+on:
+  push:
+    branches:
+      - main  # or your preferred release branch
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Necessary to push commits and tags
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches all history for tagging
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17' # Adjust based on your project needs
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run generateRelease task
+        run: ./gradlew :fab:generateRelease
+
+      - name: Extract Version Name
+        id: get_version
+        run: |
+          # Pulls the version_name from gradle.properties or command line
+          VERSION=$(./gradlew -q :fab:properties | grep "version_name:" | awk '{print $2}')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION is $VERSION"
+
+      - name: Commit Zip and Tag
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Add the zip file (adjust path if your buildDir differs)
+          git add fab/build/release-${{ env.VERSION }}.zip
+          
+          git commit -m "chore: release ${{ env.VERSION }} artifacts"
+          git tag -a "v${{ env.VERSION }}" -m "Release version ${{ env.VERSION }}"
+          
+          git push origin HEAD --follow-tags
