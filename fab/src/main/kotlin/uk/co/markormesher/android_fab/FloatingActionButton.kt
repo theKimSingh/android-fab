@@ -22,13 +22,11 @@ import androidx.cardview.widget.CardView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.android.synthetic.main.fab_container.view.*
-import kotlinx.android.synthetic.main.floating_action_button.view.*
-import kotlinx.android.synthetic.main.menu_item.view.*
-import kotlinx.android.synthetic.main.menu_item_icon.view.*
+import uk.co.markormesher.android_fab.fab.databinding.FabContainerBinding
+import uk.co.markormesher.android_fab.fab.databinding.MenuItemBinding
+import uk.co.markormesher.android_fab.fab.databinding.MenuItemIconBinding
 import uk.co.markormesher.android_fab.extensions.clearParentAlignmentRules
 import uk.co.markormesher.android_fab.fab.R
-
 
 @Suppress("MemberVisibilityCanBePrivate", "unused") // because we want to expose the methods to end users
 class FloatingActionButton: RelativeLayout {
@@ -47,6 +45,7 @@ class FloatingActionButton: RelativeLayout {
 	private val layoutInflater by lazy { LayoutInflater.from(context) }
 	private val isRightToLeft by lazy { resources.getBoolean(R.bool.is_right_to_left) }
 	val originalInternalOffset by lazy { resources.getDimension(R.dimen.fab_offset) }
+	private lateinit var binding: FabContainerBinding
 
 	private var isShown: Boolean = true
 	override fun isShown() = isShown
@@ -166,12 +165,12 @@ class FloatingActionButton: RelativeLayout {
 	}
 
 	private fun initView(attrs: AttributeSet?) {
-		inflate(context, R.layout.fab_container, this)
+		binding = FabContainerBinding.inflate(LayoutInflater.from(context), this, true)
 		applyAttributes(attrs)
 		applyListeners()
 		rebuildSpeedDialMenu()
 
-		content_cover.alpha = 0f
+		binding.contentCover.alpha = 0f
 
 		isShown = visibility == View.VISIBLE
 		if (!isShown) {
@@ -205,7 +204,7 @@ class FloatingActionButton: RelativeLayout {
 	}
 
 	private fun applyListeners() {
-		fab_card.setOnClickListener {
+		binding.fabInclude.fabCard.setOnClickListener {
 			if (speedDialMenuAdapter?.isEnabled() == true && speedDialMenuAdapter?.getCount() ?: 0 > 0) {
 				toggleSpeedDialMenu()
 			} else {
@@ -248,7 +247,7 @@ class FloatingActionButton: RelativeLayout {
 		view.layoutParams = layoutParams
 	}
 
-	private fun setSpeedDialMenuItemViewOrder(view: ViewGroup) {
+	private fun setSpeedDialMenuItemViewOrder(view: ViewGroup, itemBinding: MenuItemBinding) {
 		var labelFirst = true
 		if (buttonPosition.and(POSITION_LEFT) > 0) {
 			labelFirst = false
@@ -262,9 +261,9 @@ class FloatingActionButton: RelativeLayout {
 		if (buttonPosition.and(POSITION_END) > 0) {
 			labelFirst = !isRightToLeft
 		}
+		val label = itemBinding.menuItemLabel
+		val icon = itemBinding.menuItemIconInclude.root
 
-		val label = view.menu_item_label
-		val icon = view.menu_item_card
 		view.removeView(label)
 		view.removeView(icon)
 
@@ -280,24 +279,23 @@ class FloatingActionButton: RelativeLayout {
 	fun setButtonPosition(position: Int) {
 		buttonPosition = position
 
-		setViewLayoutParams(fab_card)
-		setViewLayoutParams(content_cover)
-		speedDialMenuViews.forEach { setViewLayoutParams(it) }
-		speedDialMenuViews.forEach { setSpeedDialMenuItemViewOrder(it) }
+		setViewLayoutParams(binding.fabInclude.fabCard)
+		setViewLayoutParams(binding.contentCover)
+		rebuildSpeedDialMenu()
 	}
 
 	fun setButtonBackgroundColour(@ColorInt colour: Int) {
 		buttonBackgroundColour = colour
 		if (Build.VERSION.SDK_INT >= 21) {
-			(fab_card as CardView).setCardBackgroundColor(colour)
+			(binding.fabInclude.fabCard as CardView).setCardBackgroundColor(colour)
 		} else {
-			(fab_card.background as GradientDrawable).setColor(colour)
+			(binding.fabInclude.fabCard.background as GradientDrawable).setColor(colour)
 		}
 	}
 
 	fun setButtonIconResource(@DrawableRes icon: Int) {
 		buttonIconResource = icon
-		fab_icon_wrapper.setBackgroundResource(icon)
+		binding.fabInclude.fabIconWrapper.setBackgroundResource(icon)
 	}
 
 	fun setInternalOffsetTop(@Dimension offsetPixels: Float) {
@@ -333,7 +331,7 @@ class FloatingActionButton: RelativeLayout {
 	private fun updateInternalOffset() {
 		// if left/right are explicitly set, use them
 		if (internalOffsetLeft != 0f || internalOffsetRight != 0f) {
-			container.setPadding(
+			binding.container.setPadding(
 					(originalInternalOffset + internalOffsetLeft).toInt(),
 					(originalInternalOffset + internalOffsetTop).toInt(),
 					(originalInternalOffset + internalOffsetRight).toInt(),
@@ -341,14 +339,14 @@ class FloatingActionButton: RelativeLayout {
 			)
 		} else {
 			if (Build.VERSION.SDK_INT >= 17) {
-				container.setPaddingRelative(
+				binding.container.setPaddingRelative(
 						(originalInternalOffset + internalOffsetStart).toInt(),
 						(originalInternalOffset + internalOffsetTop).toInt(),
 						(originalInternalOffset + internalOffsetEnd).toInt(),
 						(originalInternalOffset + internalOffsetBottom).toInt()
 				)
 			} else {
-				container.setPadding(
+				binding.container.setPadding(
 						(originalInternalOffset + if (isRightToLeft) internalOffsetEnd else internalOffsetStart).toInt(),
 						(originalInternalOffset + internalOffsetTop).toInt(),
 						(originalInternalOffset + if (isRightToLeft) internalOffsetStart else internalOffsetEnd).toInt(),
@@ -393,7 +391,7 @@ class FloatingActionButton: RelativeLayout {
 
 	fun setContentCoverColour(@ColorInt colour: Int) {
 		contentCoverColour = colour
-		(content_cover.background as GradientDrawable).setColor(colour)
+		(binding.contentCover.background as GradientDrawable).setColor(colour)
 	}
 
 	fun show() {
@@ -403,8 +401,8 @@ class FloatingActionButton: RelativeLayout {
 
 		closeSpeedDialMenu()
 		visibility = View.VISIBLE
-		fab_card.clearAnimation()
-		fab_card.animate()
+		binding.fabInclude.fabCard.clearAnimation()
+		binding.fabInclude.fabCard.animate()
 				.scaleX(1f)
 				.scaleY(1f)
 				.setDuration(HIDE_SHOW_ANIMATION_DURATION)
@@ -420,8 +418,8 @@ class FloatingActionButton: RelativeLayout {
 			return
 		}
 
-		fab_card.clearAnimation()
-		fab_card.animate()
+		binding.fabInclude.fabCard.clearAnimation()
+		binding.fabInclude.fabCard.animate()
 				.scaleX(0f)
 				.scaleY(0f)
 				.setDuration(if (immediate) 0L else HIDE_SHOW_ANIMATION_DURATION)
@@ -443,42 +441,54 @@ class FloatingActionButton: RelativeLayout {
 
 		val adapter = speedDialMenuAdapter!!
 
-		for (i in (0 until adapter.getCount())) {
+		for (i in 0 until adapter.getCount()) {
 			val menuItem = adapter.getMenuItem(context, i)
 
-			@SuppressLint("InflateParams") // because we handle attachment to root internally
-			val view = layoutInflater.inflate(R.layout.menu_item, null) as ViewGroup
-			container.addView(view)
-			speedDialMenuViews.add(view)
+			// 1. Inflate without attaching to parent immediately
+			// itemBinding.root will be the root layout of menu_item.xml (NOT the container)
+			val itemBinding = MenuItemBinding.inflate(layoutInflater, binding.container, false)
+			val itemView = itemBinding.root as ViewGroup
 
-			setViewLayoutParams(view)
-			setSpeedDialMenuItemViewOrder(view)
+			// 2. Add the new view to the container and our tracking list
+			binding.container.addView(itemView)
+			speedDialMenuViews.add(itemView as ViewGroup)
 
-			view.menu_item_label.text = menuItem.getLabel()
-			speedDialMenuAdapter?.onPrepareItemLabel(context, i, view.menu_item_label)
+			// 3. Setup layout rules and order
+			setViewLayoutParams(itemView)
+			setSpeedDialMenuItemViewOrder(itemView, itemBinding)
 
-			if (Build.VERSION.SDK_INT >= 21) {
-				(view.menu_item_card as CardView).setCardBackgroundColor(adapter.getBackgroundColour(i))
-			} else {
-				((view.menu_item_card as ViewGroup).background as GradientDrawable).setColor(adapter.getBackgroundColour(i))
-			}
-			speedDialMenuAdapter?.onPrepareItemCard(context, i, view.menu_item_card)
+			// 4. Set Label (using the binding we already have)
+			itemBinding.menuItemLabel.text = menuItem.getLabel()
+			adapter.onPrepareItemLabel(context, i, itemBinding.menuItemLabel)
 
+			// 5. Setup Icon (using the nested binding)
+			val iconBinding = itemBinding.menuItemIconInclude
+			val color = adapter.getBackgroundColour(i)
+
+			val card = iconBinding.menuItemCard
+			(card as CardView).setCardBackgroundColor(color)
+			adapter.onPrepareItemCard(context, i, card)
+
+			// 6. Set Icon Image
+			val icon = menuItem.getIcon()
 			if (Build.VERSION.SDK_INT >= 16) {
-				view.menu_item_icon_wrapper.background = menuItem.getIcon()
+				iconBinding.menuItemIconWrapper.background = icon
 			} else {
 				@Suppress("DEPRECATION")
-				view.menu_item_icon_wrapper.setBackgroundDrawable(menuItem.getIcon())
+				iconBinding.menuItemIconWrapper.setBackgroundDrawable(icon)
 			}
-			speedDialMenuAdapter?.onPrepareItemIconWrapper(context, i, view.menu_item_icon_wrapper)
+			adapter.onPrepareItemIconWrapper(context, i, iconBinding.menuItemIconWrapper)
 
-			view.alpha = 0F
-			view.visibility = GONE
+			// 7. Initial State: Hidden but ready
+			// We keep it GONE so it doesn't block touches until the menu is opened
+			itemView.alpha = 0f
+			itemView.visibility = View.GONE
 
-			view.tag = i
-			view.setOnClickListener { v ->
-				val closeMenuAfterAction = adapter.onMenuItemClick(v.tag as Int)
-				if (closeMenuAfterAction) {
+			// 8. Interaction
+			itemView.tag = i
+			itemView.setOnClickListener { v ->
+				val index = v.tag as Int
+				if (adapter.onMenuItemClick(index)) {
 					toggleSpeedDialMenu()
 				}
 			}
@@ -506,12 +516,12 @@ class FloatingActionButton: RelativeLayout {
 		animateContentCover()
 		animateSpeedDialMenuItems()
 
-		content_cover.isClickable = isSpeedDialMenuOpen
-		content_cover.isFocusable = isSpeedDialMenuOpen
+		binding.contentCover.isClickable = isSpeedDialMenuOpen
+		binding.contentCover.isFocusable = isSpeedDialMenuOpen
 		if (isSpeedDialMenuOpen) {
-			content_cover.setOnClickListener { toggleSpeedDialMenu() }
+			binding.contentCover.setOnClickListener { toggleSpeedDialMenu() }
 		} else {
-			content_cover.setOnClickListener(null)
+			binding.contentCover.setOnClickListener(null)
 		}
 	}
 
@@ -521,11 +531,11 @@ class FloatingActionButton: RelativeLayout {
 		}
 		busyAnimatingFabIconRotation = true
 
-		fab_icon_wrapper.animate()
+		binding.fabInclude.fabIconWrapper.animate()
 				.rotation(if (isSpeedDialMenuOpen) speedDialMenuAdapter?.fabRotationDegrees() ?: 0F else 0F)
 				.setDuration(SPEED_DIAL_ANIMATION_DURATION)
 				.setListener(object: AnimatorListenerAdapter() {
-					override fun onAnimationEnd(animation: Animator?) {
+					override fun onAnimationEnd(animation: Animator) {
 						busyAnimatingFabIconRotation = false
 					}
 				})
@@ -554,11 +564,11 @@ class FloatingActionButton: RelativeLayout {
 			// the cover is the same size as the fab_card, so we use a ratio of that size
 			// using the width is fine: both shapes are circles so their diameter is the same at any angle
 			// we * 2 because only half of the cover will be on screen
-			coverScale = 2 * windowDiagonal.toFloat() / fab_card.width
+			coverScale = 2 * windowDiagonal.toFloat() / binding.fabInclude.fabCard.width
 		}
 
-		content_cover.visibility = View.VISIBLE
-		content_cover.animate()
+		binding.contentCover.visibility = View.VISIBLE
+		binding.contentCover.animate()
 				.scaleX(coverScale)
 				.scaleY(coverScale)
 				.alpha(if (isSpeedDialMenuOpen) 1f else 0f)
@@ -567,7 +577,7 @@ class FloatingActionButton: RelativeLayout {
 					override fun onAnimationEnd(animation: Animator) {
 						busyAnimatingContentCover = false
 						if (!isSpeedDialMenuOpen) {
-							content_cover.visibility = View.GONE
+							binding.contentCover.visibility = View.GONE
 						}
 					}
 				})
@@ -585,7 +595,7 @@ class FloatingActionButton: RelativeLayout {
 			SPEED_DIAL_ANIMATION_DURATION
 		}
 
-		val distance = fab_card.height.toFloat()
+		val distance = binding.fabInclude.fabCard.height.toFloat()
 		speedDialMenuViews.forEachIndexed { i, v ->
 			if (isSpeedDialMenuOpen) {
 				v.visibility = View.VISIBLE
@@ -612,17 +622,18 @@ class FloatingActionButton: RelativeLayout {
 	}
 
 	val cardView: View
-		get() = fab_card
+		get() = binding.fabInclude.fabCard
 
 	val contentCoverView: View
-		get() = content_cover
+		get() = binding.contentCover
 
 	val iconWrapper: LinearLayout
-		get() = fab_icon_wrapper
+		get() = binding.fabInclude.fabIconWrapper
 
 
 	inner class MoveUpwardBehavior: CoordinatorLayout.Behavior<View>() {
 
+		@SuppressLint("RestrictedApi")
 		override fun layoutDependsOn(parent: CoordinatorLayout, child: View, dependency: View): Boolean {
 			return buttonPosition.and(POSITION_BOTTOM) > 0 && dependency is Snackbar.SnackbarLayout
 		}

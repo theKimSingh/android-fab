@@ -1,6 +1,6 @@
 buildscript {
 	repositories {
-		jcenter()
+		mavenCentral()
 		maven {
 			url "https://maven.google.com"
 		}
@@ -8,49 +8,64 @@ buildscript {
 	}
 
 	dependencies {
-		classpath 'com.android.tools.build:gradle:3.2.1'
+		classpath 'com.android.tools.build:gradle:9.1.0'
 	}
+}
+
+plugins {
+	id 'maven-publish'
+	id 'com.android.library'
+	id 'kotlin-android'
+	id 'kotlin-parcelize' // Replaces the Parcelize feature from android-extensions
 }
 
 def properties = getProps()
 
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
 
 android {
-	compileSdkVersion 28
-	buildToolsVersion '28.0.3'
+	compileSdk 34
+	namespace 'uk.co.markormesher.android_fab.fab'
+
+	buildFeatures {
+		viewBinding true
+	}
 
 	defaultConfig {
 		minSdkVersion 14
-		targetSdkVersion 28
 
-		testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+		testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 	}
 
 	sourceSets {
 		main.java.srcDirs += "src/main/kotlin"
 	}
+	lint {
+		targetSdk 34
+	}
+	testOptions {
+		targetSdk 34
+	}
+	kotlin {
+		jvmToolchain(17)
+	}
 }
 
 repositories {
-	jcenter()
+	mavenCentral()
 }
 
 dependencies {
 	implementation fileTree(include: ['*.jar'], dir: 'libs')
-	implementation 'androidx.annotation:annotation:1.0.1'
+	implementation 'androidx.annotation:annotation:1.2.0'
 	implementation 'androidx.cardview:cardview:1.0.0'
-	implementation 'com.google.android.material:material:1.1.0-alpha03'
-	implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+	implementation 'com.google.android.material:material:1.2.1'
+	implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 }
 
 /*========================*
  * Maven Plugin Packaging *
  *========================*/
 
-apply plugin: 'maven'
 
 def localReleaseDest = "${buildDir}/release/${properties['version_name']}"
 
@@ -61,39 +76,50 @@ task androidJavadocs(type: Javadoc) {
 	classpath += files(ext.androidJar)
 }
 
-task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
-	classifier = 'javadoc'
+tasks.register('androidJavadocsJar', Jar) {
+	dependsOn androidJavadocs
+	archiveClassifier = 'javadoc'
 	from androidJavadocs.destinationDir
 }
 
-task androidSourcesJar(type: Jar) {
-	classifier = 'sources'
+tasks.register('androidSourcesJar', Jar) {
+	archiveClassifier = 'sources'
 	from android.sourceSets.main.java.srcDirs
 }
 
-uploadArchives {
-	repositories.mavenDeployer {
-		pom.groupId = 'uk.co.markormesher'
-		pom.artifactId = 'android-fab'
-		pom.version = properties['version_name']
-		repository(url: "file://${localReleaseDest}")
+afterEvaluate {
+	publishing {
+		publications {
+			release(MavenPublication) {
+				// This replaces the old pom configuration
+				groupId = 'uk.co.markormesher'
+				artifactId = 'android-fab'
+				version = properties['version_name']
+
+				// This automatically includes your AAR and its dependencies
+				from components.release
+				artifact androidSourcesJar
+				artifact androidJavadocsJar
+			}
+		}
+		repositories {
+			maven {
+				// This replaces the old repository(url: ...)
+				url = uri("file://${localReleaseDest}")
+			}
+		}
 	}
 }
 
 task zipRelease(type: Zip) {
 	from localReleaseDest
-	destinationDir buildDir
-	archiveName "release-${properties['version_name']}.zip"
+	destinationDirectory = layout.buildDirectory
+	archiveFileName = "release-${project.findProperty('version_name') ?: 'unspecified'}.zip"
 }
 
-task generateRelease(dependsOn: [uploadArchives, zipRelease]) {
+task generateRelease(dependsOn: ['publishReleasePublicationToMavenRepository', zipRelease]) {
 	doLast {
 		println "Release ${properties['version_name']} can be found at ${localReleaseDest}/"
 		println "Release ${properties['version_name']} zipped can be found ${buildDir}/release-${properties['version_name']}.zip"
 	}
-}
-
-artifacts {
-	archives androidSourcesJar
-	archives androidJavadocsJar
 }

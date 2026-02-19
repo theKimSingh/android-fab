@@ -1,6 +1,6 @@
 buildscript {
 	repositories {
-		jcenter()
+		mavenCentral()
 		maven {
 			url "https://maven.google.com"
 		}
@@ -8,7 +8,7 @@ buildscript {
 	}
 
 	dependencies {
-		classpath 'com.android.tools.build:gradle:3.2.1'
+		classpath 'com.android.tools.build:gradle:9.1.0'
 	}
 }
 
@@ -17,17 +17,20 @@ def secrets = getSecrets()
 
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
 
 android {
-	compileSdkVersion 28
-	buildToolsVersion '28.0.3'
+	compileSdk 34
+
+	namespace 'uk.co.markormesher.android_fab.app'
+	buildFeatures {
+		viewBinding true
+	}
 
 	defaultConfig {
 		applicationId "uk.co.markormesher.android_fab.app"
 
-		minSdkVersion 14
-		targetSdkVersion 28
+		minSdkVersion 21
+		targetSdkVersion 34
 
 		versionCode properties['version_code']
 		versionName properties['version_name']
@@ -44,6 +47,10 @@ android {
 			keyAlias secrets['KEYSTORE_KEY_ALIAS']
 			keyPassword secrets['KEYSTORE_KEY_PASSWORD']
 		}
+	}
+
+	buildFeatures {
+		buildConfig = true
 	}
 
 	buildTypes {
@@ -70,10 +77,13 @@ android {
 			debuggable true
 		}
 	}
+	kotlin {
+		jvmToolchain(17)
+	}
 }
 
 repositories {
-	jcenter()
+	mavenCentral()
 	maven {
 		url "https://maven.google.com"
 	}
@@ -82,8 +92,9 @@ repositories {
 
 dependencies {
 	implementation fileTree(include: ['*.jar'], dir: 'libs')
-	implementation 'androidx.appcompat:appcompat:1.0.2'
-	implementation 'com.google.android.material:material:1.1.0-alpha03'
-	implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+	implementation 'androidx.appcompat:appcompat:1.2.0'
+	implementation 'com.google.android.material:material:1.2.1'
+	implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
 	implementation project(':fab')
 }
