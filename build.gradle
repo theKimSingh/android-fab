@@ -44,6 +44,6 @@ static def getSecrets() {
 static def getProps() {
 	Properties properties = new Properties()
 	properties['version_code'] = 22
-	properties['version_name'] = '2.5.0'
+	properties['version_name'] = '2.5.1'
 	return properties
 }
