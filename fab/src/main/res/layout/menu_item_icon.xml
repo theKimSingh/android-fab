@@ -1,24 +1,29 @@
-<merge
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
 		xmlns:android="http://schemas.android.com/apk/res/android"
->
+		xmlns:app="http://schemas.android.com/apk/res-auto"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:id="@+id/menu_item_icon_include">
 
-	<LinearLayout
+	<androidx.cardview.widget.CardView
 			android:id="@+id/menu_item_card"
 			android:layout_width="@dimen/speed_dial_disc_size"
 			android:layout_height="@dimen/speed_dial_disc_size"
 			android:layout_margin="@dimen/speed_dial_disc_padding"
-			style="@style/speed_dial_item_card"
-	>
+			app:cardElevation="2dp"
+			app:cardCornerRadius="@dimen/fab_radius"
+			app:cardPreventCornerOverlap="false"
+			style="@style/speed_dial_item_card">
 
 		<LinearLayout
 				android:id="@+id/menu_item_icon_wrapper"
 				android:layout_width="@dimen/speed_dial_disc_icon_size"
 				android:layout_height="@dimen/speed_dial_disc_icon_size"
-				android:layout_margin="@dimen/speed_dial_disc_icon_margin"
+				android:layout_gravity="center"
 				android:gravity="center"
-				android:orientation="vertical"
-		/>
+				android:orientation="vertical" />
 
-	</LinearLayout>
+	</androidx.cardview.widget.CardView>
 
-</merge>
+</FrameLayout>

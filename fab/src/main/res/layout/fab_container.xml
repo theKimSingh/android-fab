@@ -22,6 +22,6 @@
 			android:background="@drawable/content_cover_circle"
 	/>
 
-	<include layout="@layout/floating_action_button"/>
+	<include android:id="@+id/fab_include" layout="@layout/floating_action_button"/>
 
 </RelativeLayout>

@@ -14,6 +14,6 @@
 			android:layout_height="wrap_content"
 	/>
 
-	<include layout="@layout/menu_item_icon"/>
+	<include android:id="@+id/menu_item_icon_include" layout="@layout/menu_item_icon"/>
 
 </LinearLayout>
