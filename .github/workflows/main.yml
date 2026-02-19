@@ -64,12 +64,17 @@ jobs:
           echo "Full Workspace: $GITHUB_WORKSPACE"
           ls -R
           
-      - name: Verify Zip Exists
+      - name: Create Clean Zip
         run: |
-          if [ ! -f "fab/build/release-${{ env.VERSION }}.zip" ]; then
-            echo "Error: Zip file not found at fab/build/release-${{ env.VERSION }}.zip"
-            exit 1
-          fi
+          # 1. Enter the folder so paths start from '2.5.0'
+          cd fab/build/release/${{ env.VERSION }}/
+          
+          # 2. Zip everything inside (.) into a file two levels up (../../)
+          # -r: recursive
+          # -X: ignore extra file attributes (cleaner for Linux/Android)
+          zip -r ../../release-${{ env.VERSION }}.zip . 
+          
+      
 
       - name: Commit Version Bump
         if: github.event_name != 'pull_request'
