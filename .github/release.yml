@@ -1,0 +1,77 @@
+name: Increment, Build, and Release
+
+on:
+  push:
+    branches:
+      - development # Changed from main to match repo base
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual release'
+        required: false
+        default: 'Manual trigger'
+
+jobs:
+  release:
+    # Only run on pushes that are actually merges or direct pushes to development
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/development'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Increment Version
+        id: bump_version
+        run: |
+          # Robust extraction: look for the value assigned to version_name
+          OLD_VERSION=$(grep "version_name" build.gradle | sed "s/.*'\(.*\)'.*/\1/")
+          echo "Old Version: $OLD_VERSION"
+
+          # Increment Patch (Semantic Versioning)
+          BASE_VERSION=$(echo $OLD_VERSION | cut -d. -f1-2)
+          PATCH=$(echo $OLD_VERSION | cut -d. -f3)
+          NEW_VERSION="$BASE_VERSION.$((PATCH + 1))"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          
+          # Update build.gradle
+          sed -i "s/version_name'] = '$OLD_VERSION'/version_name'] = '$NEW_VERSION'/" build.gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run generateRelease task
+        # Note: Ensure your gradle task doesn't require interactive signing keys
+        run: ./gradlew generateRelease -Psigning.enabled=false
+
+      - name: Commit Version Bump
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add build.gradle
+          git commit -m "chore: bump version to ${{ env.NEW_VERSION }} [skip ci]"
+          git push origin development
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.NEW_VERSION }}
+          name: Release v${{ env.NEW_VERSION }}
+          # Upload the zip as an artifact, NOT to the git repo
+          files: build/release-${{ env.NEW_VERSION }}.zip
+          body: |
+            Automated Release
+            Reason: ${{ github.event.inputs.reason || 'Automated merge trigger' }}
+          draft: false
+          prerelease: false
