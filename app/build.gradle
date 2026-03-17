@@ -21,7 +21,6 @@ apply plugin: 'kotlin-android-extensions'
 
 android {
 	compileSdkVersion 34
-//	buildToolsVersion '28.0.3'
 
 	defaultConfig {
 		applicationId "uk.co.markormesher.android_fab.app"
